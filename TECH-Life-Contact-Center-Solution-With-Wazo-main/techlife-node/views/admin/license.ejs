@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head', { pageTitle: pageTitle || 'Tenant License' }) %>
+</head>
+<body class="tl-app-shell">
+    <%- include('../partials/nav') %>
+    <main class="tl-main-content">
+        <div class="tl-section-header">
+            <div>
+                <h1>Tenant License</h1>
+                <p class="tl-subtle">Upload a valid license before this tenant can work in the platform.</p>
+            </div>
+        </div>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="tl-alert tl-alert-danger"><%= error %></div>
+        <% } %>
+        <% if (typeof success !== 'undefined' && success) { %>
+            <div class="tl-alert tl-alert-success"><%= success %></div>
+        <% } %>
+
+        <div class="tl-card">
+            <h2>Current status</h2>
+            <p><strong>Tenant:</strong> <%= tenant ? tenant.name : 'Current tenant' %></p>
+            <p><strong>Status:</strong> <span class="tl-pill <%= licenseStatus && licenseStatus.isValid ? 'tl-pill-success' : 'tl-pill-danger' %>"><%= licenseStatus ? licenseStatus.status : 'missing' %></span></p>
+            <p><strong>Message:</strong> <%= licenseStatus ? licenseStatus.reason : 'No license found.' %></p>
+            <% if (licenseStatus && licenseStatus.payload) { %>
+                <p><strong>Licensed active users:</strong> <%= licenseStatus.payload.max_users %></p>
+                <p><strong>Expires:</strong> <%= new Date(licenseStatus.payload.expires_at).toLocaleString() %></p>
+            <% } %>
+            <% if (licenseStatus && licenseStatus.license) { %>
+                <p><strong>Uploaded:</strong> <%= new Date(licenseStatus.license.uploaded_at || licenseStatus.license.created_at).toLocaleString() %></p>
+                <% if (!licenseStatus.payload && licenseStatus.license.valid_to) { %>
+                    <p><strong>Valid until:</strong> <%= new Date(licenseStatus.license.valid_to).toLocaleString() %></p>
+                <% } %>
+            <% } %>
+        </div>
+
+        <div class="tl-card">
+            <h2>Upload or refresh license</h2>
+            <form method="post" action="/admin/license/upload" enctype="multipart/form-data">
+                <div class="tl-form-grid">
+                    <label>
+                        <span>Signed license JSON (paste)</span>
+                        <textarea name="license_key" rows="5" placeholder="Paste the complete generated license JSON"></textarea>
+                    </label>
+                    <label>
+                        <span>Or upload license file</span>
+                        <input type="file" name="license_file" accept=".lic,.txt,.json">
+                    </label>
+                    <label class="tl-span-2">
+                        <span>Notes</span>
+                        <input type="text" name="notes" placeholder="Optional note">
+                    </label>
+                </div>
+                <button class="tl-btn" type="submit">Save license</button>
+            </form>
+        </div>
+    </main>
+    <%- include('../partials/foot') %>
+</body>
+</html>
