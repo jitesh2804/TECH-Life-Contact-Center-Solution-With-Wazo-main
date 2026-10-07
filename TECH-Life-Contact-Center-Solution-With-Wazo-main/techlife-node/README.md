@@ -39,7 +39,7 @@ psql techlife -f seed.sql
 
 cp .env.example .env    # edit DB_* and WAZO_* values
 npm start                # or: node app.js
-# → http://localhost:3000/login  (tenant: acme, user: admin, pass: TechLife@123)
+# → http://localhost:3000/login  (user: admin, pass: TechLife@123; tenant slug is optional)
 ```
 
 Run the Wazo Event Collector (separate long-lived process):

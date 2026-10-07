@@ -5,6 +5,15 @@
 
 <form method="post" action="/admin/users/create" class="tl-card" id="createUserForm">
     <div class="tl-filters">
+        <% if (isSuperadmin) { %>
+        <div><label>Tenant</label>
+            <select name="target_tenant_id" required>
+                <% manageableTenants.forEach(tenant => { %>
+                <option value="<%= tenant.id %>" <%= tenant.id === selectedTenantId ? 'selected' : '' %>><%= tenant.name %></option>
+                <% }) %>
+            </select>
+        </div>
+        <% } %>
         <div><label>Full name</label><input name="full_name" required></div>
         <div><label>Username</label><input name="username" required></div>
         <div><label>Email</label><input type="email" name="email"></div>

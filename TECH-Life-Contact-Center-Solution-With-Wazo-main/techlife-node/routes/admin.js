@@ -47,6 +47,7 @@ function deleteBlockedMessage(err, entityLabel) {
 
 // ---- Middleware to check for critical permissions ----
 const checkUserManagement = (req, res, next) => {
+    if ((req.session.user.roles || []).includes('superadmin')) return next();
     const perms = req.session.user.permissions || [];
     if (!perms.includes('user.create') && !perms.includes('user.edit')) {
         return res.status(403).send('You do not have permission to manage users.');
@@ -215,13 +216,26 @@ router.get('/users', checkUserManagement, async (req, res) => {
          ORDER BY u.created_at DESC`,
         [t]
     )).rows;
-    res.render('admin/users', { pageTitle: 'Admin — Users', users, editId: req.query.edit || null });
+    res.render('admin/users', {
+        pageTitle: 'Admin — Users',
+        users,
+        editId: req.query.edit || null,
+        manageableTenants: req.manageableTenants || [],
+        selectedTenantId: t,
+        isSuperadmin: (req.session.user.roles || []).includes('superadmin'),
+    });
 });
 
 router.post('/users/create', checkUserManagement, async (req, res) => {
-    const t = req.effectiveTenant.id;
     const b = req.body;
     const userRoles = req.session.user.roles || [];
+    let t = req.effectiveTenant.id;
+
+    if (userRoles.includes('superadmin') && b.target_tenant_id) {
+        const selectedTenant = (req.manageableTenants || []).find((tenant) => tenant.id === b.target_tenant_id);
+        if (!selectedTenant) return res.status(403).send('You cannot create users in that tenant.');
+        t = selectedTenant.id;
+    }
 
     // Validate that user has permission to create this role
     if (!canAssignRole(userRoles, b.role_type)) {
@@ -288,7 +302,8 @@ router.post('/users/create', checkUserManagement, async (req, res) => {
                 }
             }
         }
-        res.redirect('/admin/users' + (req.query.as_tenant ? `?as_tenant=${req.query.as_tenant}` : ''));
+        const redirectTenantId = userRoles.includes('superadmin') ? t : req.query.as_tenant;
+        res.redirect('/admin/users' + (redirectTenantId ? `?as_tenant=${encodeURIComponent(redirectTenantId)}` : ''));
     } catch (e) {
         await client.query('ROLLBACK');
         if (e.code === 'LICENSE_USER_LIMIT' || e.code === 'LICENSE_INVALID') {

@@ -9,19 +9,26 @@ const { writeAuditLog } = require('./auditLog');
 const { getTenantLicenseStatus } = require('./licenseService');
 
 async function attemptLogin(tenantSlug, username, password) {
+    const normalizedTenantSlug = typeof tenantSlug === 'string' && tenantSlug.trim()
+        ? tenantSlug.trim()
+        : null;
     const userRes = await pool.query(
-        `SELECT u.id, u.tenant_id, u.username, u.full_name, u.password_hash, u.is_active, u.theme_preference
+        `SELECT u.id, u.tenant_id, u.username, u.full_name, u.password_hash, u.is_active, u.theme_preference,
+                t.slug AS tenant_slug
          FROM users u
          JOIN tenants t ON t.id = u.tenant_id
-         WHERE t.slug = $1 AND u.username = $2 AND t.is_active = TRUE
-         LIMIT 1`,
-        [tenantSlug, username]
+         WHERE ($1::text IS NULL OR t.slug = $1)
+           AND u.username = $2
+           AND u.is_active = TRUE
+           AND t.is_active = TRUE`,
+        [normalizedTenantSlug, username]
     );
-    const user = userRes.rows[0];
-    if (!user || !user.is_active) return null;
-
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) return null;
+    const validUsers = [];
+    for (const candidate of userRes.rows) {
+        if (await bcrypt.compare(password, candidate.password_hash)) validUsers.push(candidate);
+    }
+    if (validUsers.length !== 1) return null;
+    const user = validUsers[0];
 
     const roleRes = await pool.query(
         `SELECT r.role_type FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1`,
@@ -48,7 +55,7 @@ async function attemptLogin(tenantSlug, username, password) {
     return {
         id: user.id,
         tenantId: user.tenant_id,
-        tenantSlug,
+        tenantSlug: user.tenant_slug,
         username: user.username,
         fullName: user.full_name,
         roles,

@@ -12,7 +12,10 @@ router.post('/login', async (req, res) => {
     try {
         const user = await attemptLogin(tenant_slug, username, password);
         if (!user) {
-            return res.render('login', { error: 'Invalid tenant, username, or password.', form: req.body });
+            return res.render('login', {
+                error: 'Invalid username or password, or more than one tenant account matches. Enter the tenant slug under sign-in options if needed.',
+                form: req.body,
+            });
         }
 
         const licenseStatus = await getTenantLicenseStatus(user.tenantId);

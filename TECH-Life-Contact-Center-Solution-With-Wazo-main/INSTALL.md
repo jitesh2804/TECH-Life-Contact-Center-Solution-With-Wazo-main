@@ -27,13 +27,14 @@ a bug.**
   Wazo admin password, because it has no way to even see it — Wazo
   never exposes user passwords to API clients.
 
-**To log in to TECH-Life**, use a tenant/username/password that exists
-in *TECH-Life's own database* — either the one you seeded (`seed.sql`:
+**To log in to TECH-Life**, use a username/password that exists in
+*TECH-Life's own database* — either the one you seeded (`seed.sql`:
 tenant `acme`, username `admin`, password `TechLife@123`), or one you
 create yourself (see step 5 below and the Superadmin/Admin sections).
-You're welcome to name a TECH-Life user `admin` too if that's less
-confusing — it's just a row in a different table, so the username can
-match even though the password databases are entirely separate.
+The tenant slug is normally not needed; enter it under sign-in options
+only if the same username/password is shared by more than one tenant.
+After signing in as Superadmin, create tenants under **Tenants** and
+create tenant users under **Users**, selecting the target tenant.
 
 The only place Wazo credentials matter to TECH-Life is in `.env`
 (`WAZO_AUTH_USER`/`WAZO_AUTH_PASS`), and that should be a **dedicated
@@ -72,6 +73,59 @@ sudo -u postgres createdb -O techlife techlife
 ```
 
 ## 4. Get the application onto the server
+
+### Local folder install (no TECH-Life GitHub clone)
+
+Use this path when you have copied the complete project folder to the
+server yourself. For example, copy the folder to `/opt/techlife-source`
+with SCP or removable media, then run:
+
+```bash
+sudo mkdir -p /opt/techlife-source
+sudo cp -a /path/to/TECH-Life-project/. /opt/techlife-source/
+sudo chmod +x /opt/techlife-source/install-local.sh
+sudo bash /opt/techlife-source/install-local.sh
+```
+
+For this option, use section 1 for prerequisites, then skip the manual
+package/database setup in sections 2 and 3 and the schema/seed steps in
+section 5; this installer performs those steps itself.
+
+The installer takes its application source from the local folder next to
+the script (`techlife-node/` when the script is at the project root) and
+copies it into `/opt/techlife`. It does not clone, fetch, or reset the
+TECH-Life GitHub repository. It also deliberately does not install Wazo
+or fetch Wazo Ansible files; install Wazo separately from your approved
+local media/package source and set `WAZO_HOST`, `WAZO_AUTH_USER`, and
+`WAZO_AUTH_PASS` when running the installer if you want the generated
+TECH-Life `.env` to point at it. `apt-get` and `npm install` still need
+access to their configured Debian package and npm registries.
+
+Set deployment options through environment variables when needed, for
+example:
+
+```bash
+sudo env APP_PORT=3000 APP_TIMEZONE=Asia/Kolkata \
+  WAZO_HOST=192.0.2.20 WAZO_AUTH_USER=techlife-collector \
+  WAZO_AUTH_PASS='replace-with-your-wazo-service-password' \
+  bash /opt/techlife-source/install-local.sh
+```
+
+The installer keeps generated database and initial-admin credentials in
+root-only files: `/root/.techlife-local-install-secrets.env` and
+`/root/techlife-install-credentials.txt`. Existing databases are not
+dropped; schema files in the local folder are applied in order. The
+initial `admin` seed is skipped if an `admin` account already exists.
+
+Before running, make sure the copied application folder includes
+`techlife-node/app.js`, `schema.sql`, `seed.sql`, `.env.example`, and
+`config/config.js`. The installer checks for these files before changing
+the server and stops with a list if the local source is incomplete.
+
+### Git-based install
+
+If you do want to clone the repository directly on the server, follow
+the existing Git-based path below:
 
 ```bash
 # unzip the delivered techlife-node.zip, or clone your own repo

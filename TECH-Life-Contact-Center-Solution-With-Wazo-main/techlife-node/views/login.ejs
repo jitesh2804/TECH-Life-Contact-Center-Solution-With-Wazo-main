@@ -11,18 +11,20 @@
     <p class="tl-subtitle">Contact-Center Solution</p>
     <% if (typeof error !== 'undefined' && error) { %><div class="tl-error"><%= error %></div><% } %>
     <form method="post" action="/login">
-        <label>Tenant slug</label>
-        <input type="text" name="tenant_slug" placeholder="e.g. acme" required value="<%= typeof form !== 'undefined' ? form.tenant_slug || '' : '' %>">
-        <label>Username</label>
+        <label>Admin / Username</label>
         <input type="text" name="username" required value="<%= typeof form !== 'undefined' ? form.username || '' : '' %>">
         <label>Password</label>
         <input type="password" name="password" required>
+        <details>
+            <summary>Sign-in options</summary>
+            <label>Tenant slug (only if your username is used in more than one tenant)</label>
+            <input type="text" name="tenant_slug" placeholder="e.g. acme" value="<%= typeof form !== 'undefined' ? form.tenant_slug || '' : '' %>">
+        </details>
         <button class="tl-btn" type="submit">Sign in</button>
     </form>
     <div class="tl-role-hint">
-        One login for every role. Enter your <strong>tenant slug</strong> (given by your
-        administrator) plus your own username and password &mdash; Superadmin, Admin, Supervisor,
-        Agent, and MIS Agent are all recognized automatically and taken to their own dashboard.
+        Sign in with your username and password. If the same username and password are used by
+        accounts in multiple tenants, provide your tenant slug under sign-in options.
     </div>
 </div>
 </body></html>
